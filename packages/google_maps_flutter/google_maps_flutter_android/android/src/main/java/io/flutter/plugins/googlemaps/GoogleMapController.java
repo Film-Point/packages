@@ -134,7 +134,13 @@ final class GoogleMapController
     googleMap.moveCamera(cameraUpdate);
   }
 
-  private void animateCamera(CameraUpdate cameraUpdate) {
+
+  private void animateCamera(CameraUpdate cameraUpdate, Integer animationDuration) {
+    if (animationDuration != null) {
+      googleMap.animateCamera(cameraUpdate, animationDuration, null);
+    } else {
+      googleMap.animateCamera(cameraUpdate);
+    }
     googleMap.animateCamera(cameraUpdate);
   }
 
@@ -331,7 +337,8 @@ final class GoogleMapController
         {
           final CameraUpdate cameraUpdate =
               Convert.toCameraUpdate(call.argument("cameraUpdate"), density);
-          animateCamera(cameraUpdate);
+          final Integer animationDuration = call.argument("animationDuration");
+          animateCamera(cameraUpdate, animationDuration);
           result.success(null);
           break;
         }
@@ -912,7 +919,19 @@ final class GoogleMapController
       return;
     }
     mapView.onDestroy();
+    final MapView mapReference = mapView; // keep a reference to the mapView for the callback
     mapView = null;
+
+    Runnable r =
+        () -> {
+          mapReference.onDestroy();
+        };
+
+    if (preferredRenderer == MapsInitializer.Renderer.LATEST) {
+      handler.post(r);
+    } else {
+      handler.postDelayed(r, 1000);
+    }
   }
 
   public void setIndoorEnabled(boolean indoorEnabled) {
